@@ -6,6 +6,12 @@ import VueRouter from 'vue-router'
 import App from './App'
 import Home from './components/index'
 
+import  { AlertPlugin } from 'vux'
+import  { ConfirmPlugin } from 'vux'
+
+Vue.use(ConfirmPlugin)
+Vue.use(AlertPlugin)
+
 Vue.use(VueRouter)
 
 const routes = [{
