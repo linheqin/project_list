@@ -35,6 +35,9 @@
       <cell :title="'十问'" :class=project_list link="http://app145.vliang.com/" is-link value="2014-07"></cell>
       <cell :title="'变装'" :class=project_list link="http://app210.vliang.com/" is-link value="2014-05"></cell>
     </group>
+    <group :class="group_project_list" :title="'个人博客'">
+      <cell :title="'个人博客'" :class=project_list  value="2014-2018" link="http://linheqin.blog.163.com/blog/#m=0"></cell>
+    </group>
     <group :class="group_project_list" :title="'其他项目'">
       <cell :title="'其他'" :class=project_list @click.native="showModule1" value="2014-
       2018"></cell>
@@ -59,7 +62,7 @@
       ConfirmPlugin,
       Group,
       Alert,
-      XButton, 
+      XButton,
       AlertPlugin,
       AlertModule
     },
@@ -74,14 +77,14 @@
     },
     methods: {
       showPlugin () {
-        const _this = this 
+        const _this = this
         this.$vux.confirm.show({
           title: '温馨提示！',
           content: '可通过下载APP观看内嵌H5页面项目！',
           onCancel () {
           },
           onConfirm () {
-            window.localtion.href = "http://sj.qq.com/myapp/detail.htm?apkName=net.sinedu.company"
+            window.location.href    = "http://sj.qq.com/myapp/detail.htm?apkName=net.sinedu.company"
           }
         })
       },

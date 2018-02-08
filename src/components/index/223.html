@@ -1,0 +1,293 @@
+前端日刊
+关于
+登录
+来源：segmentfault.com
+webpack配合vue.js实现完整的单页面demo
+story  story
+分享于 2018-01-01 阅读 809 收藏 3
+本篇文章主要是我在开发前研究了webpack+vue.js的单页面应用，因为需要用到node的npm，所以确保安装了node，建议官网安装最新的稳定版本。并且在项目中需要加载一些npm包，由于npm的服务器在国外，可能我们下载的过程会比较慢，所以建议用阿里的镜像cnpm安装，10分钟实时更新一次npm的镜像。具体的下载配置参考阿里的cnpm官网。**本文章只是和大家探讨怎么利用webpack配合vue.js做一个单页面应用，具体关于vue里面的内容怎么写并不在本篇文章的介绍范围。**具体请参考官方文档，里面做了详细的vue的语法介绍.
+
+建议阅读前准备内容
+
+1. 定义我们demo的基本目录
+
+├── README.md
+├── index.html         // 项目入口文件
+├── package.json       // 项目配置文件
+├── src                // 生产目录
+│   ├── vue         // 组件
+│   |    ├──home.vue
+│   |    ├──blog.vue
+│   |    ├──about.vue
+│   |    ├──topic.vue
+│   ├── components     // 各种组件
+│   ├── views          // css文件
+│   ├── scss               //scss文件
+│   └── main.js        // Webpack 预编译入口
+└── webpack.js  // Webpack 配置文件
+2. 配置一下我们的webpack.js文件
+
+在介绍怎么配置之前你需要掌握一个命令 npm install <模块> --save-dev这个命令的意思是这个命名的意思是我们安装了这个包并且把它的基本信息写入目录的package.json文件。还有一个命令是我们直接运行cnpm install会自动下载package.json里面写入的包.
+
+  在webpack的配置文件我们需要用到四个npm的模块分别是：path，webpack，extract-text-webpack-plugin,vue-loader记得先下载包在用require命令引入进来
+
+  //node的路径模块
+  var path=require('path');
+  //我们是webpack当然要引入这个
+  var webpack = require('webpack');
+  //这个是构建页面资源的插件
+  var ExtractTextPlugin = require('extract-text-webpack-plugin');
+  //因为我们是vue.js的应用，把各个组件当做一个页面.vue后缀，所以引入这个可以编译這些文件
+  var vue = require("vue-loader");
+  好了，我们已经把需要的模块引入进来了，接下来我们定义一些接下来要用到的一些文件夹路径
+
+  //__dirname是node里面的一个变量，指向的是当前文件夹目录
+  var ROOT_PATH = path.resolve(__dirname);
+  //这个我们的文件入口，等下我们就会从main.js这个文件作为入口
+  var APP_PATH = path.resolve(ROOT_PATH, 'src/main.js');
+  //这个是文件打包出来的输出路径
+  var BUILD_PATH = path.resolve(ROOT_PATH, 'build');
+  基本的文件路径我们已经定义好了，接下来我们要用到extract-text-webpack-plugin这个插件了
+
+  var plugins = [
+  //提公用js到common.js文件中
+  new webpack.optimize.CommonsChunkPlugin('common.js'),
+  //将样式统一发布到style.css中
+  new ExtractTextPlugin("style.css"),
+  // 使用 ProvidePlugin 加载使用率高的依赖库
+  new webpack.ProvidePlugin({
+  $: 'webpack-zepto'
+  })
+  ];
+  接下来是webpack的重点了loader，webpack的思想是把每个静态资源文件当做一个模块加载，我们需要做一些配置，在这里我们需要用到编译css，sass模块，多以我们还需要安装’css-loader’,‘style-loader’,‘node-sass’,‘md5’
+
+  module.exports = {
+  //文件的入口，还可以写成多数组的形式，具体自己扩展
+  entry:[APP_PATH],
+  //输出
+  output:{
+  //输出路径
+  path: BUILD_PATH，
+  //打包的js命名
+  filename：build.js'
+  // 指向异步加载的路径
+  publicPath : __dirname + '/build/',
+  // 非主文件的命名规则，加缓存用到md5
+  chunkFilename: '[id].build.js?[chunkhash]'
+  },
+  module: {
+  loaders: [
+  {
+  test: /\.vue$/,
+  loader: 'vue',
+  },
+  {
+  test: /\.scss$/,
+  loader: ExtractTextPlugin.extract("style-loader", 'css-loader')
+  },
+  {
+  test: /\.css$/,
+  loader: ExtractTextPlugin.extract("style-loader", "css-loader")
+  },
+  {
+  test: /\.(png|jpg)$/,
+  loader: 'url?limit=40000'
+  }
+  ]
+  },
+  //这个特别说明下，vue提倡把一个组件当做一个页面，所以可能在一个页面写html，style，javascript，也可以引入和写scss文件
+  vue: {
+  css: ExtractTextPlugin.extract("css"),
+  sass: ExtractTextPlugin.extract("css!sass-loader")
+  },
+  plugins: plugins
+  }
+  3. 配置我们的入口文件main.js
+
+  这里我们需要三个npm模块，vue，vue-router，vue-resource三个模块，我们依次安装然后在引入
+
+  //vue的应用当然要引，等下要用它来注册
+  var Vue = require('vue')
+  //这个是路由，spa应用必要哦
+  var VueRouter = require('vue-router');
+  //这个是类似ajax请求,肯定要拉去数据啦，所以也下载吧
+  var VueResource = require('vue-resource');
+  在vue里面声明并注册个空组件
+
+  Vue.use(VueRouter);
+  Vue.use(VueResource);
+  var app = Vue.extend({});
+  实例化VueRounter
+
+  var router = new VueRouter({
+  // 当hashbang的值为true时，所有的路径都会被格式化已#!开头，
+  hashbang: true,
+  history: false,
+  saveScrollPosition: true,
+  transitionOnLoad: true
+  });
+  接下来写下我们的路由路径，也可以单独把路由写在一个文件，我们这边只是个demo所以写一起了，不打紧，关于这块路由的写法可以具体参考下vue-router的文档http://router.vuejs.org/zh-cn…，将的很详细。
+
+  这里有必要将一下，webpack提供了异步加载功能，配合vue-router的路由使用，当哪个组件需要渲染是，会加载它依赖的组件，并且异步加载进来。是不是很棒。
+
+  router.map({
+  '/':{                    //首页
+  component: function (resolve) {
+  require(['./vue/home.vue'],resolve)
+  }
+  },
+  '/home':{
+  name : 'home',                    //首页
+  component: function (resolve) {
+  require(['./vue/home.vue'],resolve)
+  }
+  },
+  '/blog':{
+  name : 'blog',               //博客列表
+  component: function (resolve) {
+  require(['./vue/blog.vue'],resolve)
+  }
+  },
+  '/blog/topic':{
+  name : 'topic',
+  //文章详情
+  component: function (resolve) {
+  require(['./vue/topic.vue'],resolve)
+  }
+  },
+  '/about':{
+  name : 'about',
+  //关于
+  component: function (resolve) {
+  require(['./vue/about.vue'],resolve)
+  }
+  }
+  })
+  再加句代码，测试访问路由访问是否成功
+
+  router.afterEach(function (transition) {
+  console.log('成功浏览到: ' + transition.to.path)
+  })
+  最后我们注册下vue
+
+  router.start(app, "#app");
+  4. 填充下index.html文件的结构
+
+  <router-view> 用于渲染匹配的组件，它基于 Vue 的动态组件系统。我们的index.html结构是这样子的
+
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <title>个人站</title>
+      <link rel="stylesheet" href="./build/style.css">
+    </head>
+    <body>
+    <div id="app">
+      <router-view></router-view>
+    </div>
+    <script src="./build/common.js"></script>
+    <script src="./build/build.js"></script>
+    </body>
+    </html>
+    5. 怎么写一个组件
+
+    关于组件，vue提倡一个模块写一个具体的组件比如列表组件可以list.vue，然后根据路由加载具体的组件，组件之间也可以相互的引用，具体参考vue文档。
+
+    为了方便我们测试，我们以home为例，其他组件也类似，方便等下测试，等项目能完整跑起来你在自己去添加组件里面的内容。
+
+    <template>
+      <div>home</div>
+    </template>
+    <script>
+      // js
+    </script>
+    <style>
+      /*style*/
+    </style>
+    6. 运行webpack
+
+    关于一个单页面的大体的框架我们已经搭建好了，现在直接运行webpack就能把文件载出来了。然后打开index.html直接测试就好了。更详细的demo已经提交到github上了 demo,还有本人使用webpack+vue+es6+sass的技术栈重构的Cnode中文网单页面应用，感兴趣的可以围观下，欢迎star。
+
+    7.开发模式
+
+    在实际开发过程中我们肯定不是每一次修改保存，然后在运行一下webpack命令，那样就太麻烦了，所以我们用到了热替换，webpack-dev-server这个包，安装好这个包后在pack.json加上
+
+    "scripts": {
+    "start": "webpack-dev-server --hot --inline"
+    }
+    并且把webpack.config.js这前我们配置好的
+
+    // 指向异步加载的路径
+    publicPath : __dirname + '/build/';
+    替换为
+
+    // 指向异步加载的路径
+    publicPath : '/build/';
+    为什么这样做呢？因为我们这前用webpack是把组件异步加载在本地上，而我们用了热替换后是地址委托到了http://localhost:8080/端口了，所以要去掉__dirname(指向本地根目录),一切准备完毕了，接下来直接运行npm start，然后打开http://localhost:8080/就可以访问，试着修改内容保存可以看看页面实时的在刷新，是不是省了很多的开发时间呢！
+
+    关于vue-cli
+
+    vue.js的原作者为了方便我们做项目前期花费时间配置這些自动化构建工具，出了一个vue-cli的脚手架，可以自动生成项目的一系列基本配置。vue-cli的github地址为https://github.com/vuejs/vue-cli，感兴趣的童鞋可以去了解下。
+
+    关于vue2.0
+
+    2.0已经出来了，相信以后大家也要慢慢跟上2.0的版本了，2.0在1.0的基础上构建这边有一点点和1.0的区别，听我讲来。
+    在评论里有位同学说2.0已经不支持1.0的路由方式了，恩，的确是，这里我把2.0的路由方式重新写了下。
+
+    var Vue = require('vue');
+    var VueRouter = require('vue-router');
+    Vue.use(VueRouter);
+    const Home = resolve => {
+    require.ensure(['./vue/home.vue'], () => {
+    resolve(require('./vue/home.vue'));
+    });
+    };
+    const List = resolve => {
+    require.ensure(['./vue/list.vue'], () => {
+    resolve(require('./vue/list.vue'));
+    });
+    };
+    const routes = [{
+    path: '/',
+    name: 'home',
+    component: Home
+    },{
+    path: '/list',
+    name: 'list',
+    component: List
+    },{
+    path: '*',
+    component: Home
+    }];
+    const router = new VueRouter({
+    mode: 'history',
+    routes
+    });
+    new Vue({
+    router
+    }).$mount('#app');
+    更多有关于路由的问题请参考vue-router2.0中文文档。
+    还有一点问题是如果是用webpack构建项目的时候，要在webpack.confing.js的配置文件加上
+
+    resolve: {
+    alias: {
+    'vue/div>: 'vue/dist/vue.js'
+    }
+    }
+    因为vue2.0有两种构建模式，默认情况下运行构建，但是不能解析单文件的template模板，所以要使用独立构建。具体可以参考vue2.0中文文档，其他一些关于语法的改变看下2.0的文档就行了，还有vuex不被2.0影响，可以兼容。
+
+    Vue webpack
+    收藏
+    评论
+
+    评论
+    相关文章
+    整理4种Vue组件通信方式
+    VUE使用中踩过的坑
+    webpack打包第三方类库的正确姿势
+    vue数据传递--我有特殊的实现技巧
+    简单的 Vue SSR Demo
+    RSS / 关于
+    © 2017-2018 前端日刊
+    回到顶部
